@@ -12,8 +12,28 @@ const LOGIN_PATH = PageEnum.BASE_LOGIN;
 const whitePathList = [LOGIN_PATH]; // no redirect whitelist
 
 export function createRouterGuards(router: Router) {
-  const userStore = useUserStoreWidthOut();
+  // 用户信息保存的store
+  const userStore = useUserStoreWidthOut(); 
+  // 用户权限相关信息的store
   const asyncRouteStore = useAsyncRouteStoreWidthOut();
+
+  /**
+   * 进入之前所做的工作如下：
+   * 1、页面的loading状态开启
+   * 2、如果从登录页进入errorPage，则强制跳转到主页————return
+   * 3、如果页面不需要权限，则直接进入————return
+   * 4、获取登录的token？已存在
+   * >  4.1、该路由meta.ignoreAuth=true，则直接进入页面————return
+   * >  4.2、页面replace to登录页面，保存URL的query参数并添加redirect为to.path————return
+   * 5、已挂载过动态路由数据useAsyncRouteStore.isDynamicAddedRoute，直接进行登录————return
+   * 6、获取useUserStoreWidthOut中的当前登录用户信息，把有权限的菜单和动态路由数据保存到useAsyncRouteStore
+   * 7、将所有的动态路由逐个挂载router上
+   * 8、如果已定义的路由表中没有404页面，则自动添加404
+   * 9、跳转页面from.query.redirect || to.path
+   * 10、将useAsyncRouteStore.isDynamicAddedRoute=true
+   * 11、页面的loading状态关闭
+   * 
+   */
   router.beforeEach(async (to, from, next) => {
     const Loading = window['$loading'] || null;
     Loading && Loading.start();
@@ -79,6 +99,19 @@ export function createRouterGuards(router: Router) {
     Loading && Loading.finish();
   });
 
+  /**
+   * 进入页面所做的工作如下：
+   * 1、设置页面的title= (to?.meta?.title as string) || document.title
+   * 2、如果从登录页进入errorPage，则强制跳转到主页————return
+   * 3、如果页面不需要权限，则直接进入————return
+   * 4、获取已被KeepAlive的所有路由列表：keepAliveComponents = asyncRouteStore.keepAliveComponents
+   * 5、在当前路由匹配表中，查找当前页面的路由配置信息？
+   * >  已找到 && 尚未被缓存 && to.meta?.keepAlive路由被被配置为需要缓存————存放到keepAliveComponents中
+   * >  !to.meta?.keepAlive不需要缓存 || to.name == 'Redirect'————从缓存列表中找到并删除
+   * 6、更新asyncRouteStore.keepAliveComponents
+   * 7、页面的loading状态关闭
+   * 
+   */
   router.afterEach((to, _, failure) => {
     document.title = (to?.meta?.title as string) || document.title;
     if (isNavigationFailure(failure)) {
