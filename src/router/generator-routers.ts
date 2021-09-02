@@ -14,6 +14,11 @@ LayoutMap.set('IFRAME', Iframe);
 
 /**
  * 格式化 后端 结构信息并递归生成层级路由表
+ * 
+ * 将后端返回的路由列表按按照前端定义的格式化，并处理一下内容：
+ * 1、层级路由，path拼合父级path
+ * 2、路由重定向处理：如果存在redirect且children长度大于0，则redirect替换为children[0].path
+ * 
  * @param routerMap
  * @param parent
  * @returns {*}
@@ -52,7 +57,12 @@ export const routerGenerator = (routerMap, parent?): any[] => {
 };
 
 /**
- * 动态生成菜单
+ * 从后端获取动态路由列表，格式化并添加到路由列表中，然后返回路由配置列表
+ * 1、获取服务端的用户路由权限配置
+ * 2、按前端路由格式生成层级路由routeList
+ * 3、routeList合并constantRouter，生成完整的asyncRoutesList  —— constantRouter是路由初始化的默认配置，重复添加有意义吗
+ * 4、asyncRoutesList逐个添加到router.addRoute中   ———— 这个步骤多余，因为在router-guards.ts又添加了一次(这个位置是不同权限模式都添加，更加合理)，
+ * 
  * @returns {Promise<Router>}
  */
 export const generatorDynamicRouter = (): Promise<RouteRecordRaw[]> => {
@@ -60,7 +70,9 @@ export const generatorDynamicRouter = (): Promise<RouteRecordRaw[]> => {
     adminMenus()
       .then((result) => {
         const routeList = routerGenerator(result);
+
         asyncImportRoute(routeList);
+
         const asyncRoutesList = [...routeList, ...constantRouter];
         asyncRoutesList.forEach((item) => {
           router.addRoute(item);
@@ -75,7 +87,15 @@ export const generatorDynamicRouter = (): Promise<RouteRecordRaw[]> => {
 
 /**
  * 查找views中对应的组件文件
- * */
+ * 1、使用vite导入views下的所有视图对象返回给viewsModules = {'../views/xx/x.vue/tsx': () => import('../views/xx/x.vue/tsx'), ...} 
+ * 2、对传入的路由对象进行map遍历，修改内容如下：
+ * 2.1、是frame的路由，设置item.component = 'IFRAME';
+ * 2.2、item.componet 是否存在？
+ * 2.2.1、存在： 在LayoutMap查找是否存在对应的路由组件，存在item.component=对应的路由组件对象；不存在，在viewsModules中查找对应的item.component，存在则更新item.component，不存在则输出警告并返回undefined
+ * 2.2.2、存在在：item.component = ParentLayout
+ * 2.3、item.children是否存在？存在：递归查找item.children；不存在则继续2的下一个元素
+ *
+ */
 let viewsModules: Record<string, () => Promise<Recordable>>;
 export const asyncImportRoute = (routes: AppRouteRecordRaw[] | undefined): void => {
   viewsModules = viewsModules || import.meta.glob('../views/**/*.{vue,tsx}');
@@ -102,7 +122,11 @@ export const asyncImportRoute = (routes: AppRouteRecordRaw[] | undefined): void 
 
 /**
  * 动态导入
- * */
+ * 1、获取传入的viewsModules的keys，单个格式为：'../views/xx/x.vue/tsx'
+ * 2、matchKeys = 过滤所有的keys：先删除key中的../views，如果key的路径名(不包含.后缀)==component，则保留；
+ * 3、如果matchKeys刚好为1，则返回结果；否则返回undefined
+ * 
+ */
 export const dynamicImport = (
   viewsModules: Record<string, () => Promise<Recordable>>,
   component: string

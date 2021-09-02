@@ -76,6 +76,7 @@ export const useAsyncRouteStore = defineStore({
     // 设置动态路由
     setRouters(routers) {
       this.addRouters = routers;
+      // constantRouter重复多次添加
       this.routers = constantRouter.concat(routers);
     },
     setMenus(menus) {
@@ -86,6 +87,19 @@ export const useAsyncRouteStore = defineStore({
       // 设置需要缓存的组件
       this.keepAliveComponents = compNames;
     },
+    /**
+     * 根据权限管理模式，获取用户的路由列表
+     * @param data object  用户登录时返回的用户信息
+     * @returns 用户的路由列表accessedRouters
+     * 1、获取用户权限列表：permissionsList = data.permissions || []
+     * 2、获取项目的权限管理模式permissionMode：保存在setting/projectSetting.ts中，值为：菜单权限模式 FIXED 前端固定路由  BACK 动态获取
+     * 2.1、动态获取（permissionMode==BACK），动态路由列表并添加到路由中，保存路由列表到accessedRouters中
+     * 2.2、前端固定（permissionMode==FIXED），根据用户权限及路由权限配置来动态生成该用户的路由列表accessedRouters
+     * 3、根据用户权限及路由权限配置来动态生成该用户的路由列表accessedRouters ———— 跟2.2有重复的点，应该没必要了
+     * 4、保存accessedRouters到addRouters、routers、menus中
+     * 5、返回accessedRouters
+     * 
+     */
     async generateRoutes(data) {
       let accessedRouters;
       const permissionsList = data.permissions || [];
