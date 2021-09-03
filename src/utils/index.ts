@@ -54,7 +54,17 @@ export function generatorMenu(routerMap: Array<any>) {
 
 /**
  * 混合菜单
- * */
+ * @param routerMap 菜单列表
+ * @param routerName 是匹配到的当前激活路由列表中的第一个的name
+ * @param location 菜单栏的位置
+ * @returns 
+ * 1、克隆一份菜单列表
+ * 2、过滤掉需要隐藏的菜单项
+ * 3、判断菜单显示位置？
+ * 3.1、header：只展示一级菜单列表：meta?.alwaysShow == true && 只有一个子元素————替换为子元素信息
+ * 3.2、其他：只返回当前激活路由的递归子路由列表
+ * 
+ */
 export function generatorMenuMix(routerMap: Array<any>, routerName: string, location: string) {
   const cloneRouterMap = cloneDeep(routerMap);
   const newRouter = filterRouter(cloneRouterMap);
@@ -80,6 +90,11 @@ export function generatorMenuMix(routerMap: Array<any>, routerName: string, loca
 
 /**
  * 递归组装子菜单
+ * 1、过滤掉需要隐藏的菜单项
+ * 2、菜单列表遍历处理
+ * 2.2.1、meta?.alwaysShow == true && 只有一个子元素————替换为子元素信息
+ * 2.2.2、对子路由进行递归处理
+ * 
  * */
 export function getChildrenRouter(routerMap: Array<any>) {
   return filterRouter(routerMap).map((item) => {
@@ -101,7 +116,7 @@ export function getChildrenRouter(routerMap: Array<any>) {
 }
 
 /**
- * 判断根路由 Router
+ * 判断根路由 Router：meta?.alwaysShow == true && 只有一个子元素
  * */
 export function isRootRouter(item) {
   return item.meta?.alwaysShow != true && item.children?.length === 1;
@@ -109,6 +124,8 @@ export function isRootRouter(item) {
 
 /**
  * 排除Router
+ * 1、meta.hidden=true的项
+ * 2、错误页路由、重定向、登录这几个功能路由
  * */
 export function filterRouter(routerMap: Array<any>) {
   return routerMap.filter((item) => {
