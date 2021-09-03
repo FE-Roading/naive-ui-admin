@@ -97,6 +97,8 @@
   import { ResultEnum } from '@/enums/httpEnum';
   import logo from '@/assets/images/logo.png';
   import { PersonOutline, LockClosedOutline, LogoGithub, LogoFacebook } from '@vicons/ionicons5';
+  import useDisableHistoryChange from '@/hooks/history'
+
 
   interface FormState {
     username: string;
@@ -107,7 +109,8 @@
   const message = useMessage();
   const loading = ref(false);
   const autoLogin = ref(true);
-
+  useDisableHistoryChange()
+  
   const formInline = reactive({
     username: 'admin',
     password: '123456',

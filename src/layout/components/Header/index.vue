@@ -177,6 +177,7 @@
         return unref(getMenuSetting).mixMenu;
       });
 
+      // 菜单栏展开和收缩时，其宽度和主体内容宽度设置
       const getChangeStyle = computed(() => {
         const { collapsed } = props;
         const { minMenuWidth, menuWidth }: any = unref(getMenuSetting);
@@ -210,6 +211,7 @@
         });
       };
 
+      // 根据当前页面匹配到的路由列表，生成面包屑内容
       const breadcrumbList = computed(() => {
         return generator(route.matched);
       });

@@ -75,7 +75,7 @@
 </template>
 
 <script lang="ts">
-  import { defineComponent, reactive, toRefs } from 'vue';
+  import { defineComponent, reactive, toRefs, onMounted } from 'vue';
   import { ResultEnum } from '@/enums/httpEnum';
   import recharge from './Recharge.vue';
   import {
@@ -93,6 +93,7 @@
   import { useBattery } from '@/hooks/useBattery';
   import { useLockscreenStore } from '@/store/modules/lockscreen';
   import { useUserStore } from '@/store/modules/user';
+  import useDisableHistoryChange from '@/hooks/history'
 
   export default defineComponent({
     name: 'Lockscreen',
@@ -115,6 +116,7 @@
 
       const router = useRouter();
       const route = useRoute();
+      useDisableHistoryChange()
 
       const { battery, batteryStatus, calcDischargingTime, calcChargingTime } = useBattery();
       const userInfo: object = userStore.getUserInfo || {};
